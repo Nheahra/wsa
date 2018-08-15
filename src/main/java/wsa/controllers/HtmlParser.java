@@ -12,23 +12,22 @@ public class HtmlParser {
     private static HashMap<String,Element> tableMap = new HashMap<>();
     private static SqlExecution sqlExecution = new SqlExecution();
 
-    public static void parseHtml(){
+    public static void parseHtml() {
         Document doc;
         Element relicSibling;
         Elements headers;
         try {
             doc = Jsoup.connect("https://n8k6e2y6.ssl.hwcdn.net/repos/hnfvc0o3jnfvc873njb03enrf56.html").get();
             headers = doc.getElementsByTag("h3");
-            for (Element header : headers){
+            for (Element header : headers) {
                 String headerId = header.attr("id");
                 if (headerId != "") {
                     relicSibling = header.nextElementSibling();
                     tableMap.put(headerId, relicSibling);
                 }
             }
-        }
-        catch (Exception e){
-           e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         //Delete the data in tables for a fresh parse
@@ -37,13 +36,24 @@ public class HtmlParser {
             //can't truncate a table with foreign keys, so delete and reset auto_increment
             sqlExecution.pushData("DELETE FROM Relics;");
             sqlExecution.pushData("ALTER TABLE Relics AUTO_INCREMENT = 1;");
+            sqlExecution.pushData("DELETE FROM Locations");
+            sqlExecution.pushData("ALTER TABLE Locations AUTO_INCREMENT = 1");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         //Makes a HashMap<RelicName, RelicDrops>
-        Element test = tableMap.get("relicRewards");
+        Element relicRewards = tableMap.get("relicRewards");
+        Element missionRewards = tableMap.get("missionRewards");
 
+        try {
+            relicParse(relicRewards);
+            missionParse(missionRewards);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    static void relicParse(Element test) {
         String title = new String();
         HashMap<String, String> relicTest = new HashMap();
         HashMap<String, HashMap> multiRelic = new HashMap<>();
@@ -169,5 +179,49 @@ public class HtmlParser {
                 + drops.get("bronze2") + "', '"
                 + drops.get("bronze3") + "');"
         );
+    }
+    static void missionParse(Element missionData){
+
+        ArrayList<HashMap<String, String>> locationPush = new ArrayList<>();
+        HashMap<String, String> locationTable = new HashMap<>();
+        String locationName = "";
+        String mission = "";
+        String planet = "";
+        String rotation = "";
+
+        for (Element tr : missionData.getElementsByTag("tr")){
+            if (tr.hasClass("blank-row")){
+                locationTable.put("locationName", locationName);
+                locationTable.put("mission", mission);
+                locationTable.put("planet", planet);
+                locationPush.add(locationTable);
+                locationTable = new HashMap();
+            } else if (tr.child(0).is("th")){
+                if(tr.child(0).text().contains("Rotation")){
+                    //assign rotation and relics
+                } else {
+                    String[] title = tr.child(0).text().split("/");
+                    String[] nameMission = title[1].split(" [(]");
+                    nameMission[1].replace(")", "");
+                    planet = title[0];
+                    locationName = nameMission[0];
+                    mission = nameMission[1];
+                }
+            }
+        }
+        try {
+            pushLocations(locationPush);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    private static void pushLocations(ArrayList<HashMap<String, String>> locationPush) throws Exception{
+        for (HashMap<String,String> location : locationPush) {
+            sqlExecution.pushData("INSERT INTO Locations (LocationName, Mission, Planet) VALUES ('" +
+                    location.get("locationName") + "','" +
+                    location.get("mission") + "', '" +
+                    location.get("planet") + "');"
+            );
+        }
     }
 }

@@ -41,7 +41,7 @@ public class RelicSearchController {
                 sql = "";
                 break;
         }
-
+        System.out.println(sqlExecution.getRelics(sql));
         return sqlExecution.getRelics(sql);
 
     }
@@ -49,7 +49,9 @@ public class RelicSearchController {
     @CrossOrigin(origins = "https://wsa-kvarkonyi.c9users.io")
     @RequestMapping("/getQuality")
     public ArrayList<Quality> getQuality(@RequestParam(value="quality") String quality) throws Exception {
+        System.out.println(quality);
         sql = "SELECT * FROM Refinement WHERE Level = '" + quality + "';";
+        System.out.println(sqlExecution.getQuality(sql));
         return sqlExecution.getQuality(sql);
     }
 }

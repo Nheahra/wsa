@@ -8,7 +8,7 @@ import javax.validation.constraints.NotNull;
 
 //This class is only for GET methods
 @Entity
-@Table(name = "Relics")
+//@Table(name = "Relics")
 public class Relic {
 
     @Id

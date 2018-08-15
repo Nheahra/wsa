@@ -7,7 +7,7 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "Refinement")
+//@Table(name = "Refinement")
 public class Quality {
 
     @Id
