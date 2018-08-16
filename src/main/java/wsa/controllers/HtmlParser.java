@@ -4,6 +4,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import wsa.models.RLA;
+import wsa.models.Relic;
 
 import java.util.*;
 
@@ -12,7 +14,7 @@ public class HtmlParser {
     private static HashMap<String,Element> tableMap = new HashMap<>();
     private static SqlExecution sqlExecution = new SqlExecution();
 
-    public static void parseHtml() {
+    public static void main(String[] args) {
         Document doc;
         Element relicSibling;
         Elements headers;
@@ -32,10 +34,10 @@ public class HtmlParser {
 
         //Delete the data in tables for a fresh parse
         try {
-            sqlExecution.pushData("TRUNCATE TABLE Refinement;");
+            //sqlExecution.pushData("TRUNCATE TABLE Refinement;");
             //can't truncate a table with foreign keys, so delete and reset auto_increment
-            sqlExecution.pushData("DELETE FROM Relics;");
-            sqlExecution.pushData("ALTER TABLE Relics AUTO_INCREMENT = 1;");
+            //sqlExecution.pushData("DELETE FROM Relics;");
+            //sqlExecution.pushData("ALTER TABLE Relics AUTO_INCREMENT = 1;");
             sqlExecution.pushData("DELETE FROM Locations");
             sqlExecution.pushData("ALTER TABLE Locations AUTO_INCREMENT = 1");
         } catch (Exception e) {
@@ -47,7 +49,7 @@ public class HtmlParser {
         Element missionRewards = tableMap.get("missionRewards");
 
         try {
-            relicParse(relicRewards);
+            //relicParse(relicRewards);
             missionParse(missionRewards);
         } catch (Exception e) {
             e.printStackTrace();
@@ -66,7 +68,7 @@ public class HtmlParser {
             } else if (tr.child(0).is("th")){
                 title = tr.child(0).text();
             } else {
-                //concat string "." to get around double keys
+                //concat string " " to get around double keys
                 if(relicTest.containsKey(tr.child(0).text())){
                     //noinspection ResultOfMethodCallIgnored
                     relicTest.put(tr.child(0).text() + " ", tr.child(1).text());
@@ -180,48 +182,77 @@ public class HtmlParser {
                 + drops.get("bronze3") + "');"
         );
     }
-    static void missionParse(Element missionData){
+    static void missionParse(Element missionData) throws Exception {
 
-        ArrayList<HashMap<String, String>> locationPush = new ArrayList<>();
         HashMap<String, String> locationTable = new HashMap<>();
+        ArrayList<RLA> rlaArray = new ArrayList<>();
         String locationName = "";
         String mission = "";
         String planet = "";
         String rotation = "";
+        int locationIndex = 1;
 
         for (Element tr : missionData.getElementsByTag("tr")){
-            if (tr.hasClass("blank-row")){
+            boolean tableContent = false;
+            if (tr.hasClass("blank-row") && locationName != ""){
                 locationTable.put("locationName", locationName);
                 locationTable.put("mission", mission);
                 locationTable.put("planet", planet);
-                locationPush.add(locationTable);
+                try {
+                    pushLocations(locationTable);
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+                locationName = "";
+                locationIndex++;
+                rotation = "";
                 locationTable = new HashMap();
-            } else if (tr.child(0).is("th")){
-                if(tr.child(0).text().contains("Rotation")){
-                    //assign rotation and relics
-                } else {
-                    String[] title = tr.child(0).text().split("/");
-                    String[] nameMission = title[1].split(" [(]");
-                    nameMission[1].replace(")", "");
-                    planet = title[0];
-                    locationName = nameMission[0];
-                    mission = nameMission[1];
+            } else if (tr.child(0).is("th") && !tr.child(0).text().contains("Rotation") && !tr.child(0).text().contains("Event") && !tr.child(0).text().contains("Conclave")){
+                String[] title = tr.child(0).text().split("/");
+                String[] nameMission = title[1].split(" [(]");
+                planet = title[0];
+                locationName = nameMission[0];
+                mission = nameMission[1].replace(")", "");
+                if (mission.equals("Caches")){
+                    mission = "Sabotage";
+                }
+            } if(tableContent == true){
+                if (tr.child(0).text().contains("Rotation") || tr.child(0).text().contains("Relic")){
+                    if (tr.child(0).text().contains("Rotation")){
+                        rotation = tr.child(0).text();
+                    } else if (tr.child(0).text().contains("Relic")){
+                        String relic = tr.child(0).text().replace(" Relic", "");
+                        String[] fullDropChance = tr.child(1).text().split("[()]");
+                        String dropChance = fullDropChance[1];
+                        int relicId = sqlExecution.getRelicId("SELECT RelicId FROM Relics WHERE RelicName='" + relic + "';");
+                        System.out.println("rotation: " + rotation + "  relicId: " + relicId + "  locationId: " + locationIndex + "  dropChance: " + dropChance);
+                        RLA rla = new RLA();
+                        rla.setRotation(rotation);
+                        rla.setRelicId(relicId);
+                        rla.setLocationId(locationIndex);
+                        rla.setDropChance(dropChance);
+                        rlaArray.add(rla);
+                    }
                 }
             }
         }
-        try {
-            pushLocations(locationPush);
-        } catch (Exception e){
-            e.printStackTrace();
+        for (RLA rla : rlaArray) {
+            pushRLA(rla.getRotation(), rla.getRelicId(), rla.getLocationId(), rla.getDropChance());
         }
     }
-    private static void pushLocations(ArrayList<HashMap<String, String>> locationPush) throws Exception{
-        for (HashMap<String,String> location : locationPush) {
-            sqlExecution.pushData("INSERT INTO Locations (LocationName, Mission, Planet) VALUES ('" +
-                    location.get("locationName") + "','" +
-                    location.get("mission") + "', '" +
-                    location.get("planet") + "');"
-            );
-        }
+    private static void pushLocations(HashMap<String, String> location) throws Exception{
+        sqlExecution.pushData("INSERT INTO Locations (LocationName, Mission, Planet) VALUES ('" +
+                location.get("locationName") + "', '" +
+                location.get("mission") + "', '" +
+                location.get("planet") + "');"
+        );
+    }
+    private static void pushRLA(String rotation, int relicId, int locationId, String dropChance) throws Exception {
+        sqlExecution.pushData("INSERT INTO RelicLocationAssociation (Rotation, RelicID, LocationID, DropChance) Values ('" +
+                rotation + "', '" +
+                relicId + "', '" +
+                locationId + "', '" +
+                dropChance + "');"
+        );
     }
 }

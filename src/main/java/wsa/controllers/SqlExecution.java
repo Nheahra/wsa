@@ -1,5 +1,6 @@
 package wsa.controllers;
 
+import wsa.models.Location;
 import wsa.models.Quality;
 import wsa.models.Relic;
 
@@ -23,6 +24,26 @@ class SqlExecution {
         } finally {
             DBConnect.closeConnection(con, st, null);
         }
+    }
+
+    int getRelicId(String sql) throws Exception{
+
+        int relicId = 0;
+
+        try {
+            con = DBConnect.getConnection();
+            Statement st = con.createStatement();
+            resultSet = st.executeQuery(sql);
+
+            while (resultSet.next()){
+                relicId = resultSet.getInt("RelicId");
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        } finally {
+            DBConnect.closeConnection(con, st, null);
+        }
+        return relicId;
     }
 
     ArrayList<Relic> getRelics(String sql) throws Exception{
@@ -83,5 +104,32 @@ class SqlExecution {
             DBConnect.closeConnection(con, st, null);
         }
         return qualityArray;
+    }
+
+    ArrayList<Location> getLocations(String sql) throws Exception {
+
+        ArrayList<Location> locationsArray = new ArrayList<>();
+
+        try{
+            con = DBConnect.getConnection();
+            Statement st = con.createStatement();
+            resultSet = st.executeQuery(sql);
+
+            while(resultSet.next()) {
+                Location location = new Location();
+
+                location.setId(resultSet.getInt("LocationID"));
+                location.setLocationName(resultSet.getString("LocationName"));
+                location.setMission((resultSet.getString("Mission")));
+                location.setPlanet((resultSet.getString("Planet")));
+
+                locationsArray.add(location);
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally {
+            DBConnect.closeConnection(con, st, null);
+        }
+        return locationsArray;
     }
 }
