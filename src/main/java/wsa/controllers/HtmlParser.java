@@ -14,7 +14,7 @@ public class HtmlParser {
     private static HashMap<String,Element> tableMap = new HashMap<>();
     private static SqlExecution sqlExecution = new SqlExecution();
 
-    public static void main(String[] args) {
+    public static void HtmlParse() {
         Document doc;
         Element relicSibling;
         Elements headers;
@@ -34,12 +34,14 @@ public class HtmlParser {
 
         //Delete the data in tables for a fresh parse
         try {
-            //sqlExecution.pushData("TRUNCATE TABLE Refinement;");
+            sqlExecution.pushData("TRUNCATE TABLE Refinement;");
             //can't truncate a table with foreign keys, so delete and reset auto_increment
-            //sqlExecution.pushData("DELETE FROM Relics;");
-            //sqlExecution.pushData("ALTER TABLE Relics AUTO_INCREMENT = 1;");
-            sqlExecution.pushData("DELETE FROM Locations");
-            sqlExecution.pushData("ALTER TABLE Locations AUTO_INCREMENT = 1");
+            sqlExecution.pushData("DELETE FROM Relics;");
+            sqlExecution.pushData("ALTER TABLE Relics AUTO_INCREMENT = 1;");
+            sqlExecution.pushData("DELETE FROM Locations;");
+            sqlExecution.pushData("ALTER TABLE Locations AUTO_INCREMENT = 1;");
+            sqlExecution.pushData("DELETE FROM RelicLocationAssociation;");
+            sqlExecution.pushData("ALTER TABLE RelicLocationAssociation AUTO_INCREMENT = 1;");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -49,7 +51,12 @@ public class HtmlParser {
         Element missionRewards = tableMap.get("missionRewards");
 
         try {
-            //relicParse(relicRewards);
+            relicParse(relicRewards);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
             missionParse(missionRewards);
         } catch (Exception e) {
             e.printStackTrace();
@@ -191,9 +198,9 @@ public class HtmlParser {
         String planet = "";
         String rotation = "";
         int locationIndex = 1;
+        boolean bool = false;
 
         for (Element tr : missionData.getElementsByTag("tr")){
-            boolean tableContent = false;
             if (tr.hasClass("blank-row") && locationName != ""){
                 locationTable.put("locationName", locationName);
                 locationTable.put("mission", mission);
@@ -207,25 +214,28 @@ public class HtmlParser {
                 locationIndex++;
                 rotation = "";
                 locationTable = new HashMap();
+                bool = false;
             } else if (tr.child(0).is("th") && !tr.child(0).text().contains("Rotation") && !tr.child(0).text().contains("Event") && !tr.child(0).text().contains("Conclave")){
+                bool = true;
                 String[] title = tr.child(0).text().split("/");
                 String[] nameMission = title[1].split(" [(]");
                 planet = title[0];
                 locationName = nameMission[0];
                 mission = nameMission[1].replace(")", "");
                 if (mission.equals("Caches")){
-                    mission = "Sabotage";
+                    mission = "Sabotage Caches";
                 }
-            } if(tableContent == true){
+            } if(bool){
                 if (tr.child(0).text().contains("Rotation") || tr.child(0).text().contains("Relic")){
                     if (tr.child(0).text().contains("Rotation")){
                         rotation = tr.child(0).text();
                     } else if (tr.child(0).text().contains("Relic")){
-                        String relic = tr.child(0).text().replace(" Relic", "");
+                        String[] fullRelic = tr.child(0).text().split(" Relic");
+                        String relic = fullRelic[0];
                         String[] fullDropChance = tr.child(1).text().split("[()]");
                         String dropChance = fullDropChance[1];
                         int relicId = sqlExecution.getRelicId("SELECT RelicId FROM Relics WHERE RelicName='" + relic + "';");
-                        System.out.println("rotation: " + rotation + "  relicId: " + relicId + "  locationId: " + locationIndex + "  dropChance: " + dropChance);
+                        System.out.println("rotation: " + rotation + "  relic: " + relic + "  locationId: " + locationIndex + "  dropChance: " + dropChance);
                         RLA rla = new RLA();
                         rla.setRotation(rotation);
                         rla.setRelicId(relicId);
