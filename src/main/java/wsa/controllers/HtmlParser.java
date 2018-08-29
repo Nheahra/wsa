@@ -55,7 +55,7 @@ public class HtmlParser {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        //These are separate so they run sequentially instead of at the same time
         try {
             missionParse(missionRewards);
         } catch (Exception e) {
@@ -246,8 +246,13 @@ public class HtmlParser {
                 }
             }
         }
+        ArrayList<Integer> relicIds = new ArrayList<>();
         for (RLA rla : rlaArray) {
             pushRLA(rla.getRotation(), rla.getRelicId(), rla.getLocationId(), rla.getDropChance());
+            if(!relicIds.contains(rla.getRelicId())) {
+                sqlExecution.pushData("UPDATE Relics SET isAvailable = 1 WHERE RelicId = " + rla.getRelicId() + ";");
+                relicIds.add(rla.getRelicId());
+            }
         }
     }
     private static void pushLocations(HashMap<String, String> location) throws Exception{

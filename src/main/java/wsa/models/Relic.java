@@ -28,10 +28,12 @@ public class Relic {
     private String bronze2;
     @NotNull
     private String bronze3;
+    @NotNull
+    private int isAvailable;
 
     public Relic(){}
 
-    public Relic(String name, String gold, String silver1, String silver2, String bronze1, String bronze2, String bronze3){
+    public Relic(String name, String gold, String silver1, String silver2, String bronze1, String bronze2, String bronze3, int isAvailable){
         this.name = name;
         this.gold = gold;
         this.silver1 = silver1;
@@ -39,6 +41,7 @@ public class Relic {
         this.bronze1 = bronze1;
         this.bronze2 = bronze2;
         this.bronze3 = bronze3;
+        this.isAvailable = isAvailable;
     }
 
     public int getId(){
@@ -95,5 +98,12 @@ public class Relic {
     }
     public void setBronze3(String bronze3) {
         this.bronze3 = bronze3;
+    }
+
+    public int getIsAvailable() {
+        return isAvailable;
+    }
+    public void setIsAvailable(int isAvailable) {
+        this.isAvailable = isAvailable;
     }
 }

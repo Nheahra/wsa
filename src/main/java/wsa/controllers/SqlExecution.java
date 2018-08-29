@@ -1,8 +1,6 @@
 package wsa.controllers;
 
-import wsa.models.Location;
-import wsa.models.Quality;
-import wsa.models.Relic;
+import wsa.models.*;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -11,6 +9,7 @@ class SqlExecution {
 
     private Connection con;
     private Statement st;
+    private PreparedStatement pst;
     private ResultSet resultSet = null;
 
     void pushData(String sql) throws Exception {
@@ -46,14 +45,19 @@ class SqlExecution {
         return relicId;
     }
 
-    ArrayList<Relic> getRelics(String sql) throws Exception{
+    ArrayList<Relic> getRelics(String sql, int i, String userInput) throws Exception{
 
         ArrayList<Relic> relicSet = new ArrayList<>();
+        int x = 1;
 
         try {
             con = DBConnect.getConnection();
-            Statement st = con.createStatement();
-            resultSet = st.executeQuery(sql);
+            PreparedStatement pst = con.prepareStatement(sql);
+            while (x <= i) {
+                pst.setString(x, "%" + userInput + "%");
+                x++;
+            }
+            resultSet = pst.executeQuery();
 
             while (resultSet.next()){
                 Relic relic = new Relic();
@@ -66,6 +70,7 @@ class SqlExecution {
                 relic.setBronze1(resultSet.getString("Bronze1"));
                 relic.setBronze2(resultSet.getString("Bronze2"));
                 relic.setBronze3(resultSet.getString("Bronze3"));
+                relic.setIsAvailable(resultSet.getInt("isAvailable"));
 
                 relicSet.add(relic);
             }
@@ -106,30 +111,41 @@ class SqlExecution {
         return qualityArray;
     }
 
-    ArrayList<Location> getLocations(String sql) throws Exception {
-
-        ArrayList<Location> locationsArray = new ArrayList<>();
+    ArrayList<MissionLocation> getMissions(String sql, int i, String userInput) throws Exception {
+        ArrayList<MissionLocation> missionLocations = new ArrayList<>();
+        int x = 1;
 
         try{
             con = DBConnect.getConnection();
-            Statement st = con.createStatement();
-            resultSet = st.executeQuery(sql);
-
-            while(resultSet.next()) {
-                Location location = new Location();
-
-                location.setId(resultSet.getInt("LocationID"));
-                location.setLocationName(resultSet.getString("LocationName"));
-                location.setMission((resultSet.getString("Mission")));
-                location.setPlanet((resultSet.getString("Planet")));
-
-                locationsArray.add(location);
+            PreparedStatement pst = con.prepareStatement(sql);
+            while (x <= i) {
+                pst.setString(x, userInput + "%");
+                x++;
             }
-        } catch(Exception e){
+            resultSet = pst.executeQuery();
+
+            while (resultSet.next()){
+                MissionLocation missionLocation = new MissionLocation();
+
+                missionLocation.setId(resultSet.getInt("rlaID"));
+                missionLocation.setRotation(resultSet.getString("Rotation"));
+                missionLocation.setRelicId(resultSet.getInt("RelicID"));
+                missionLocation.setLocationId(resultSet.getInt("LocationID"));
+                missionLocation.setDropChance(resultSet.getString("DropChance"));
+                missionLocation.setPlanet(resultSet.getString("Planet"));
+                missionLocation.setLocationName(resultSet.getString("LocationName"));
+                missionLocation.setRelicName(resultSet.getString("RelicName"));
+                missionLocation.setMission(resultSet.getString("Mission"));
+
+                missionLocations.add(missionLocation);
+            }
+
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
             DBConnect.closeConnection(con, st, null);
         }
-        return locationsArray;
+
+        return missionLocations;
     }
 }
