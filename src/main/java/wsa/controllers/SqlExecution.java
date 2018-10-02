@@ -148,4 +148,56 @@ class SqlExecution {
 
         return missionLocations;
     }
+
+    ArrayList<Prime> getPrime(String sql) throws Exception {
+        ArrayList<Prime> primeList = new ArrayList<>();
+
+        try{
+            con = DBConnect.getConnection();
+            PreparedStatement pst = con.prepareStatement(sql);
+            resultSet = pst.executeQuery();
+
+            while(resultSet.next()){
+                Prime prime = new Prime();
+                prime.setId(resultSet.getInt("primeID"));
+                prime.setName(resultSet.getString("primeName"));
+                primeList.add(prime);
+            }
+
+        } catch (Exception e){
+            e.printStackTrace();
+        } finally {
+            DBConnect.closeConnection(con, st, null);
+        }
+        return primeList;
+    }
+
+    ArrayList<Prime> getFarm(String sql, String userInput) throws Exception {
+        ArrayList<Prime> primeList = new ArrayList<>();
+        int x = 1;
+        int i = 6;
+
+        try{
+            con = DBConnect.getConnection();
+            PreparedStatement pst = con.prepareStatement(sql);
+            while (x <= i) {
+                pst.setString(x, userInput + "%");
+                x++;
+            }
+            resultSet = pst.executeQuery();
+
+            while(resultSet.next()){
+                Prime prime = new Prime();
+                prime.setId(resultSet.getInt("primeID"));
+                prime.setName(resultSet.getString("primeName"));
+                primeList.add(prime);
+            }
+
+        } catch (Exception e){
+            e.printStackTrace();
+        } finally {
+            DBConnect.closeConnection(con, st, null);
+        }
+        return primeList;
+    }
 }
