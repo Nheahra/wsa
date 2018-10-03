@@ -7,6 +7,7 @@ import org.jsoup.select.Elements;
 import wsa.models.RLA;
 import wsa.models.Relic;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class HtmlParser {
@@ -14,7 +15,7 @@ public class HtmlParser {
     private static HashMap<String,Element> tableMap = new HashMap<>();
     private static SqlExecution sqlExecution = new SqlExecution();
 
-    public static void HtmlParse() {
+    public static void htmlParser() {
         Document doc;
         Element relicSibling;
         Elements headers;
@@ -35,14 +36,20 @@ public class HtmlParser {
         //Delete the data in tables for a fresh parse
         try {
             sqlExecution.pushData("TRUNCATE TABLE Refinement;");
+            sqlExecution.pushData("TRUNCATE TABLE Primes");
             //can't truncate a table with foreign keys, so delete and reset auto_increment
             sqlExecution.pushData("DELETE FROM Relics;");
             sqlExecution.pushData("ALTER TABLE Relics AUTO_INCREMENT = 1;");
             sqlExecution.pushData("DELETE FROM Locations;");
             sqlExecution.pushData("ALTER TABLE Locations AUTO_INCREMENT = 1;");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //child rows from other tables must be deleted first
+        try{
             sqlExecution.pushData("DELETE FROM RelicLocationAssociation;");
             sqlExecution.pushData("ALTER TABLE RelicLocationAssociation AUTO_INCREMENT = 1;");
-        } catch (Exception e) {
+        }catch (Exception e){
             e.printStackTrace();
         }
 
@@ -88,6 +95,7 @@ public class HtmlParser {
         //Refining the HashMap to push to SQL
         HashMap<String, HashMap<String, String>> refinementMap = new HashMap<>();
         ArrayList<String> relicNames = new ArrayList<>();
+        ArrayList<String> primeArray = new ArrayList<>();
 
         for (HashMap.Entry<String, HashMap> item : multiRelic.entrySet()){
 
@@ -157,12 +165,25 @@ public class HtmlParser {
                     } else {
                         System.out.println("Key : Value pairs are not matching up.");
                     }
+                    String[] prime = value.getKey().split(" Prime");
+                    if(!primeArray.contains(prime[0]) && prime[0] != "Forma Blueprint"){
+                        primeArray.add(prime[0]);
+                    }
                 }
             }
 
             if (!sqlRelicMap.isEmpty()) {
                 try {
                     pushRelics(relicName[0], sqlRelicMap);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        if(!primeArray.isEmpty()){
+            for(String prime : primeArray) {
+                try {
+                    sqlExecution.pushData("INSERT INTO Primes (primeName) VALUES ('" + prime + "');");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -178,7 +199,6 @@ public class HtmlParser {
         );
     }
     private static void pushRelics(String name, HashMap<String, String> drops) throws Exception{
-        //the split() is to circumvent the double key issue stated on line 57
         sqlExecution.pushData("INSERT INTO Relics (RelicName, Gold, Silver1, Silver2, Bronze1, Bronze2, Bronze3) VALUES ('"
                 + name + "', '"
                 + drops.get("gold") + "', '"
