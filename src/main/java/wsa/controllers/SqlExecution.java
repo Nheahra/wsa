@@ -172,8 +172,8 @@ class SqlExecution {
         return primeList;
     }
 
-    ArrayList<Prime> getFarm(String sql, String userInput) throws Exception {
-        ArrayList<Prime> primeList = new ArrayList<>();
+    ArrayList<Farm> getFarm(String sql, String userInput) throws Exception {
+        ArrayList<Farm> farmList = new ArrayList<>();
         int x = 1;
         int i = 6;
 
@@ -187,10 +187,33 @@ class SqlExecution {
             resultSet = pst.executeQuery();
 
             while(resultSet.next()){
-                Prime prime = new Prime();
-                prime.setId(resultSet.getInt("primeID"));
-                prime.setName(resultSet.getString("primeName"));
-                primeList.add(prime);
+                Farm farm = new Farm();
+                Relic relic = new Relic();
+                MissionLocation missionLocation = new MissionLocation();
+
+                missionLocation.setId(resultSet.getInt("rlaID"));
+                missionLocation.setRotation(resultSet.getString("Rotation"));
+                missionLocation.setRelicId(resultSet.getInt("RelicId"));
+                missionLocation.setLocationId(resultSet.getInt("LocationID"));
+                missionLocation.setDropChance(resultSet.getString("DropChance"));
+                missionLocation.setPlanet(resultSet.getString("Planet"));
+                missionLocation.setLocationName(resultSet.getString("LocationName"));
+                missionLocation.setRelicName(resultSet.getString("RelicName"));
+                missionLocation.setMission(resultSet.getString("Mission"));
+
+                relic.setId(resultSet.getInt("RelicId"));
+                relic.setName(resultSet.getString("RelicName"));
+                relic.setGold(resultSet.getString("Gold"));
+                relic.setSilver1(resultSet.getString("Silver1"));
+                relic.setSilver2(resultSet.getString("Silver2"));
+                relic.setBronze1(resultSet.getString("Bronze1"));
+                relic.setBronze2(resultSet.getString("Bronze2"));
+                relic.setBronze3(resultSet.getString("Bronze3"));
+                relic.setIsAvailable(1);
+
+                farm.setMissionLocation(missionLocation);
+                farm.setRelic(relic);
+                farmList.add(farm);
             }
 
         } catch (Exception e){
@@ -198,6 +221,6 @@ class SqlExecution {
         } finally {
             DBConnect.closeConnection(con, st, null);
         }
-        return primeList;
+        return farmList;
     }
 }

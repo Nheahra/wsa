@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import wsa.models.Farm;
 import wsa.models.Prime;
 
 import java.util.ArrayList;
@@ -16,7 +17,7 @@ public class FarmingGuideController {
 
     @CrossOrigin(origins = "https://wsa-kvarkonyi.c9users.io")
     @RequestMapping("/farmingGuide")
-    public String getPrime(@RequestParam(value="keyword") String keyword) throws Exception {
+    public ArrayList<Farm> getPrime(@RequestParam(value="keyword") String keyword) throws Exception {
         //join the tables between primes, relics and missionlocation
         sql = "SELECT rla.rlaID, rla.Rotation, rla.RelicID, rla.LocationID, rla.DropChance," +
                 "loc.Planet, loc.LocationName, loc.Mission," +
@@ -30,7 +31,7 @@ public class FarmingGuideController {
                 "OR rel.Bronze1 LIKE ?" +
                 "OR rel.Bronze2 LIKE ?" +
                 "OR rel.Bronze3 LIKE ?;";
-        return "";
+        return sqlExecution.getFarm(sql, keyword);
     }
 
     @CrossOrigin(origins = "https://wsa-kvarkonyi.c9users.io")
