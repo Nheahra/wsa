@@ -166,7 +166,7 @@ public class HtmlParser {
                         System.out.println("Key : Value pairs are not matching up.");
                     }
                     String[] prime = value.getKey().split(" Prime");
-                    if(!primeArray.contains(prime[0]) && prime[0] != "Forma Blueprint"){
+                    if(!primeArray.contains(prime[0]) && !prime[0].contains("Forma")){
                         primeArray.add(prime[0]);
                     }
                 }

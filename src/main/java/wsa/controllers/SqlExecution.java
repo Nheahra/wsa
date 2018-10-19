@@ -186,6 +186,8 @@ class SqlExecution {
             }
             resultSet = pst.executeQuery();
 
+            System.out.println(resultSet);
+
             while(resultSet.next()){
                 Farm farm = new Farm();
                 Relic relic = new Relic();
